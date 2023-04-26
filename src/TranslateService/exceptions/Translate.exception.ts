@@ -1,5 +1,5 @@
 export class TranslateException {
-  constructor(message: string) {
-    throw new Error(message);
+  constructor(error: string) {
+    throw new Error(error);
   }
 }

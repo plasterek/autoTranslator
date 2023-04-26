@@ -1,19 +1,12 @@
 import express from "express";
+import cookieParser from "cookie-parser";
+import { TranslateController } from "../TranslateController/Translate.controller";
 import { AvailableLanguagesService } from "../AvailableLanguagesService/AvailableLanguages.service";
 import { TranslateService } from "../TranslateService/Translate.service";
-require("dotenv").config();
+import dotenv from "dotenv";
+dotenv.config();
 
 const PORT: string = process.env.PORT || "5000";
-const apiKey: string | undefined = process.env.API_KEY;
-const translateApiUrl: string | undefined = process.env.API_URL;
-const availableLanguagesApiUrl: string | undefined = process.env.LANG_API_URL;
-if (!apiKey || !translateApiUrl || !availableLanguagesApiUrl || !PORT) throw new Error("Data missing in .env file");
-
-const translate: TranslateService = new TranslateService(translateApiUrl, apiKey);
-const availableLanguages: AvailableLanguagesService = new AvailableLanguagesService(availableLanguagesApiUrl, apiKey);
-availableLanguages.getListFromAPI();
-
-// App
 const app = express();
 app.listen(PORT, () => console.log(`Server started on ${PORT}`));
 
@@ -21,37 +14,24 @@ app.listen(PORT, () => console.log(`Server started on ${PORT}`));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Main site
-app.get("/", (req, res) => {
-  const reponse: { message: string; description: string } = {
-    message: "Welcome to translator APP",
-    description: "To translate text use /translate \n To see available languages use /translate/languages",
-  };
-  res.status(200).send(reponse);
-});
-
-// Available languages
-app.get("/translate/languages", (req, res) => {
-  const languages: string[] = availableLanguages.getAvailableLanguages();
-  res.status(200).send(languages);
-});
-
-// Translator
-app.post("/translate", async (req, res) => {
-  const text: string = req.body.text;
-  const target: string = req.body.target;
-  if (!availableLanguages.checkIfLanguageIsAvailable(target)) {
-    return res
-      .status(400)
-      .send({ error: "Wrong language code", description: "To see available languages add /languages to current URL" });
+// Cookies? - do czego to wykorzystać?
+app.use(cookieParser());
+app.use(function (req, res, next) {
+  var cookie = req.cookies.cookieName;
+  if (cookie === undefined) {
+    var randomNumber = Math.random().toString();
+    randomNumber = randomNumber.substring(2, randomNumber.length);
+    res.cookie("cookieName", randomNumber, { maxAge: 900000, httpOnly: true });
+    console.log("cookie created successfully");
+  } else {
+    console.log("Cookie exist: ", cookie);
   }
-  try {
-    const translation: {
-      translatedText: string;
-      detectedSourceLanguage: string;
-    }[] = await translate.translateText(text, target);
-    res.status(200).send(translation);
-  } catch (err: any) {
-    res.status(404).send({ message: "Something went wrong", descrpiton: err.message });
-  }
+  next();
 });
+app.use(express.static(__dirname + "/dist"));
+
+// Init App
+const translateService: TranslateService = new TranslateService();
+const availableLanguagesService: AvailableLanguagesService = new AvailableLanguagesService();
+const translateApp: TranslateController = new TranslateController(translateService, availableLanguagesService);
+translateApp.initRoutes(app);

@@ -2,10 +2,25 @@ import axios from "axios";
 import { TranslateException } from "./exceptions/Translate.exception";
 
 export class TranslateService {
-  constructor(private readonly translateApiUrl: string, private readonly apiKey: string) {}
+  private readonly translateApiUrl: string | undefined = process.env.API_URL;
+  private readonly apiKey: string | undefined = process.env.API_KEY;
+
   public async translateText(originalText: string, targetLanguage: string) {
-    const url: URL = new URL(this.translateApiUrl);
+    if (!this.translateApiUrl || this.translateApiUrl.length === 0) {
+      throw new TranslateException("TranslateApiUrl not provided!");
+    }
+    if (!this.apiKey || this.apiKey.length === 0) {
+      throw new TranslateException("ApiKey not provided");
+    }
+
+    let url: URL;
+    try {
+      url = new URL(this.translateApiUrl);
+    } catch (err: any) {
+      throw new TranslateException("TranslateApiUrl is not valid!");
+    }
     url.searchParams.append("key", this.apiKey);
+
     try {
       const response: axios.AxiosResponse = await axios.post(
         url.toString(),
@@ -16,7 +31,6 @@ export class TranslateService {
           },
         }
       );
-
       if (response.status === 200) {
         return response.data.data.translations;
       } else {
