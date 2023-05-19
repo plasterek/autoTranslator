@@ -1,5 +1,5 @@
-export class AvailableLanguagesException {
-  constructor(err: any) {
-    throw new Error(err);
+export class AvailableLanguagesServiceException extends Error {
+  constructor(error: any) {
+    super(error);
   }
 }

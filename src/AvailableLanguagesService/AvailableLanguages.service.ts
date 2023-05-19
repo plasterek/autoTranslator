@@ -1,5 +1,5 @@
 import axios from "axios";
-import { AvailableLanguagesException } from "./exceptions/AvailableLanguages.exception";
+import { AvailableLanguagesServiceException } from "./exceptions/AvailableLanguages.exception";
 
 export class AvailableLanguagesService {
   private readonly languageListApiURL: string | undefined = process.env.LANG_API_URL;
@@ -8,10 +8,10 @@ export class AvailableLanguagesService {
 
   public async getListFromAPI(): Promise<axios.AxiosResponse> {
     if (!this.languageListApiURL || this.languageListApiURL.length === 0) {
-      throw new AvailableLanguagesException("LanguageListApiURL not provided!");
+      throw new AvailableLanguagesServiceException("LanguageListApiURL not provided!");
     }
     if (!this.apiKey || this.apiKey.length === 0) {
-      throw new AvailableLanguagesException("ApiKey not provided");
+      throw new AvailableLanguagesServiceException("ApiKey not provided");
     }
 
     try {
@@ -22,11 +22,12 @@ export class AvailableLanguagesService {
         return response.data.data.languages.forEach((object: { language: string }) =>
           this.languages.push(object.language)
         );
-      } else {
-        throw new AvailableLanguagesException(`Status: ${response.status}, Message: ${response.data.error.message}`);
       }
+      throw new AvailableLanguagesServiceException(
+        `Status: ${response.status}, Message: ${response.data.error.message}`
+      );
     } catch (err: any) {
-      throw new AvailableLanguagesException(err);
+      throw new AvailableLanguagesServiceException(err.message);
     }
   }
   public getAvailableLanguages(): string[] {
