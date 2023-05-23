@@ -2,8 +2,6 @@ import axios from "axios";
 import { TranslateService } from "../Translate.service";
 import { TranslateServiceException } from "../exceptions/TranslateService.exception";
 
-jest.createMockFromModule("axios");
-
 describe("TranslateService class", () => {
   const translate: TranslateService = new TranslateService();
   beforeEach(() => {

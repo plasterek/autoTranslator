@@ -2,9 +2,6 @@ import { AvailableLanguagesService } from "../../AvailableLanguagesService/Avail
 import { CacheService } from "../../CacheService/Cache.service";
 import { TranslateService } from "../../TranslateService/Translate.service";
 import { TranslateController } from "../Translate.controller";
-import express from "express";
-
-jest.createMockFromModule("express");
 
 describe("Translate controller class", () => {
   const cacheAdress: string = "./src/CacheService/__tests__/TestCache.database.json";

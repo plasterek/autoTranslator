@@ -4,10 +4,7 @@ import { TranslateService } from "../TranslateService/Translate.service";
 import { TranslateServiceRequestDTO } from "../TranslateService/models/TranslateServiceRequest.dto";
 import { TranslateServiceResponseDTO } from "../TranslateService/models/TranslateServiceResponse.dto";
 import { TranslateControllerResponseDTO } from "./models/TranslateControllerResponse.dto";
-import dotenv from "dotenv";
 import { CacheService } from "../CacheService/Cache.service";
-
-dotenv.config();
 
 export class TranslateController {
   constructor(
@@ -35,26 +32,18 @@ export class TranslateController {
         res.status(200).send(languages);
       } catch (err: any) {
         const response: TranslateControllerResponseDTO = new TranslateControllerResponseDTO("Error", `${err.message}`);
-        res.status(404).send(response);
+        res.status(500).send(response);
       }
     });
 
-    // Translator
     app.post(
       "/translate",
       (req, res, next) => this.cacheService.cacheMiddleware(req, res, next),
       async (req: express.Request, res: express.Response): Promise<any> => {
         try {
-          if (res.locals.cache) {
-            return res.status(200).send(res.locals.cache);
-          }
-
           const { text, target }: TranslateServiceRequestDTO = req.body;
           if (text.length === 0 || target.length === 0) {
-            const response: TranslateControllerResponseDTO = new TranslateControllerResponseDTO(
-              "Error",
-              "Missing 'text' or 'target' parameter in body"
-            );
+            const response: TranslateControllerResponseDTO = new TranslateControllerResponseDTO("Error", "Missing 'text' or 'target' parameter in body");
             return res.status(404).send(response);
           }
 
@@ -63,7 +52,7 @@ export class TranslateController {
               "Error",
               "Wrong language code. To see available languages add /languages to current URL"
             );
-            return res.status(400).send(response);
+            return res.status(404).send(response);
           }
 
           const translation: TranslateServiceResponseDTO = await this.translateService.translateText(text, target);
@@ -71,7 +60,7 @@ export class TranslateController {
           return res.status(200).send(translation);
         } catch (err: any) {
           const response: TranslateControllerResponseDTO = new TranslateControllerResponseDTO("Error", err.message);
-          res.status(404).send(response);
+          res.status(500).send(response);
         }
       }
     );

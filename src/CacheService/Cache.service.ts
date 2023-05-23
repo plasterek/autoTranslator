@@ -1,67 +1,61 @@
-import fs from "fs";
+import fs from "fs/promises";
 import { CacheServiceQueryDTO } from "./models/CacheServiceQuery.dto";
 import { CacheServiceResponseDTO } from "./models/CacheServiceResponse.dto";
 import { TranslateServiceRequestDTO } from "../TranslateService/models/TranslateServiceRequest.dto";
 import { TranslateServiceResponseDTO } from "../TranslateService/models/TranslateServiceResponse.dto";
 import express, { NextFunction } from "express";
 import { CacheServiceException } from "./exception/CacheService.exception";
+import { verifyGivenString } from "../utils/verifyGivenString.utils";
 
 export class CacheService {
-  constructor(private readonly databaseAdress: string) {
-    try {
-      this.readCache();
-    } catch (err: any) {
-      throw new CacheServiceException("Cannot find database at given adress");
-    }
-  }
+  constructor(private readonly databaseAdress: string = verifyGivenString(process.env.DATABASE, "You need to provide database adress!")) {}
 
-  public cacheMiddleware(req: express.Request, res: express.Response, next: NextFunction): void {
+  public async cacheMiddleware(req: express.Request, res: express.Response, next: NextFunction) {
     try {
       const { text, target }: TranslateServiceRequestDTO = req.body;
       const query: CacheServiceQueryDTO = { text: text, target: target };
-      const cache: TranslateServiceResponseDTO | false = this.returnCachedDataIfExist(query);
-      if (!cache) {
-        return next();
+      const cachedData: TranslateServiceResponseDTO | null = await this.returnCachedDataIfExist(query);
+      if (!cachedData) {
+        next();
+      } else {
+        res.status(200).send(cachedData);
       }
-      res.locals.cache = cache;
-      next();
     } catch (err: any) {
-      console.log(err);
-      next();
+      throw new CacheServiceException(err);
     }
   }
 
-  public returnCachedDataIfExist(query: CacheServiceQueryDTO): TranslateServiceResponseDTO | false {
+  public async returnCachedDataIfExist(query: CacheServiceQueryDTO): Promise<TranslateServiceResponseDTO | null> {
     try {
-      const data: CacheServiceResponseDTO[] = this.readCache();
-      if (data.length === 0) return false;
-      const cache: CacheServiceResponseDTO | undefined = data.find(
-        (element) => element.text === query.text && element.target === query.target
-      );
-      if (!cache) return false;
-      return cache.response;
+      const data: CacheServiceResponseDTO[] = await this.readCachedData();
+      const cachedData: CacheServiceResponseDTO | undefined = data.find((element) => element.text === query.text && element.target === query.target);
+      if (cachedData) {
+        return cachedData.response;
+      }
+      return null;
     } catch (err: any) {
-      throw new CacheServiceException(err.message);
+      throw new CacheServiceException(err);
     }
   }
 
-  public writeCache(data: CacheServiceResponseDTO): void {
+  public async writeCache(data: CacheServiceResponseDTO): Promise<void> {
     try {
-      const currentData: CacheServiceResponseDTO[] = this.readCache();
+      const currentData: CacheServiceResponseDTO[] = await this.readCachedData();
       currentData.push(data);
-      return fs.writeFileSync(this.databaseAdress, JSON.stringify(currentData));
+      return fs.writeFile(this.databaseAdress, JSON.stringify(currentData));
     } catch (err: any) {
-      throw new CacheServiceException(err.message);
+      throw new CacheServiceException(err);
     }
   }
 
-  public readCache(): CacheServiceResponseDTO[] {
+  public async readCachedData(): Promise<CacheServiceResponseDTO[]> {
     try {
-      const bufferData: string = fs.readFileSync(this.databaseAdress, "utf8");
-      const data: CacheServiceResponseDTO[] = JSON.parse(bufferData);
+      const bufferData: Buffer = await fs.readFile(this.databaseAdress);
+      const stringData: string = bufferData.toString("utf8");
+      const data: CacheServiceResponseDTO[] = JSON.parse(stringData);
       return data;
     } catch (err: any) {
-      throw new CacheServiceException(err.message);
+      throw new CacheServiceException(err);
     }
   }
 }

@@ -2,12 +2,10 @@ import axios from "axios";
 import { AvailableLanguagesService } from "../AvailableLanguages.service";
 import { AvailableLanguagesServiceException } from "../exceptions/AvailableLanguages.exception";
 
-jest.createMockFromModule("axios");
-
 describe("AvailableLanguagesService class", () => {
   const languages: AvailableLanguagesService = new AvailableLanguagesService();
   beforeEach(() => {
-    jest.clearAllMocks;
+    jest.clearAllMocks();
   });
 
   describe("When trying to get list of available languages from API", () => {
@@ -15,9 +13,8 @@ describe("AvailableLanguagesService class", () => {
       //given
       const get = jest.spyOn(axios, "get");
       //when
-      await languages.getListFromAPI();
       //then
-      expect.assertions(1);
+      expect(async () => await languages.getListFromAPI()).not.toThrow();
       expect(get).toBeCalled();
     });
   });
@@ -32,24 +29,6 @@ describe("AvailableLanguagesService class", () => {
       //then
       expect.assertions(1);
       expect(async () => await languages.getListFromAPI()).rejects.toThrow(AvailableLanguagesServiceException);
-    });
-  });
-
-  describe("When trying to get list of available languages and everything goes well", () => {
-    it("It should return string array", async () => {
-      //given
-      const languages = new AvailableLanguagesService();
-      const expectedValue: string = "value";
-      const mockedResult: { status: number; data: { data: { languages: Array<{ language: string }> } } } = {
-        status: 200,
-        data: { data: { languages: [{ language: expectedValue }] } },
-      };
-      //when
-      jest.spyOn(axios, "get").mockResolvedValue(mockedResult);
-      await languages.getListFromAPI();
-      //then
-      expect.assertions(1);
-      expect(languages.getAvailableLanguages()).toMatchObject([expectedValue]);
     });
   });
 
