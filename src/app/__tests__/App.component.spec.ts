@@ -1,8 +1,5 @@
-import { TranslateService } from "../../TranslateService/Translate.service";
-import { CacheService } from "../../CacheService/Cache.service";
 import request from "supertest";
 const makeRequest = request("http://localhost:5000");
-import fs from "fs/promises";
 
 describe("Testing API endpoints", () => {
   beforeEach(() => {
@@ -11,7 +8,6 @@ describe("Testing API endpoints", () => {
   describe("When making get request to main adress", () => {
     it("It should respond with 200 status and welcome message", async () => {
       const response = await makeRequest.get("/");
-      const body = response.body;
       expect(response.status).toEqual(200);
     });
   });
