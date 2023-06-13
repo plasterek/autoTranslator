@@ -1,15 +1,22 @@
 import { CacheService } from "../Cache.service";
-import { CacheServiceException } from "../exception/CacheService.exception";
 import { CacheServiceResponseDTO } from "../models/CacheServiceResponse.dto";
 import { TranslateServiceResponseDTO } from "../../TranslateService/models/TranslateServiceResponse.dto";
-import fs from "fs/promises";
+import mockFs from "mock-fs";
 import { CacheServiceQueryDTO } from "../models/CacheServiceQuery.dto";
+import { CacheServiceException } from "../exception/CacheService.exception";
 
 describe("CacheService class", () => {
-  const cache: CacheService = new CacheService();
+  let cache: CacheService = new CacheService();
+
   beforeEach(() => {
-    jest.clearAllMocks();
-  });
+    const mockDatabaseData: string = JSON.stringify([
+      { text: "text", target: "target", response: [{ translatedText: "text", detectedSourceLanguage: "language" }] },
+    ]);
+    mockFs({ "database/Cache.database.json": mockDatabaseData });
+  }),
+    afterEach(() => {
+      mockFs.restore();
+    });
 
   describe("When trying to write to database and everything goes well", () => {
     it("It should not throw an exception", async () => {
@@ -21,25 +28,53 @@ describe("CacheService class", () => {
         response: response,
       };
       //when
-      jest.spyOn(fs, "writeFile").mockImplementation();
+      const write: void = await cache.writeCache(data);
       //then
-      expect(async () => await cache.writeCache(data)).not.toThrow();
+      expect(async () => write).not.toThrow();
+    });
+  });
+
+  describe("When trying to write to database and there is error with file system", () => {
+    it("It should throw an exception", async () => {
+      //given
+      const response: TranslateServiceResponseDTO = { translatedText: "text", detectedSourceLanguage: "language" };
+      const data: CacheServiceResponseDTO = {
+        text: "randomText",
+        target: "randomTarget",
+        response: response,
+      };
+      //when
+      mockFs({});
+      //then
+      expect(async () => cache.writeCache(data)).rejects.toThrow(CacheServiceException);
     });
   });
 
   describe("When trying to read from database and everything goes well", () => {
-    it("It should not throw an exception", () => {
+    it("It should not throw an exception", async () => {
+      //when
+      const read: CacheServiceResponseDTO[] = await cache.readCachedData();
       //then
-      expect(async () => await cache.readCachedData()).not.toThrow();
+      expect(async () => read).not.toThrow();
+    });
+  });
+
+  describe("When trying to read from database and ther is file system error", () => {
+    it("It should throw an exception", async () => {
+      //when
+      mockFs({ database: {} });
+      //then
+      expect(async () => await cache.readCachedData()).rejects.toThrow(CacheServiceException);
     });
   });
 
   describe("When trying to get given data from database and it does not exist in database", () => {
     it("It should return null", async () => {
       //given
-      const query: CacheServiceQueryDTO = { text: "text", target: "target" };
+      const query: CacheServiceQueryDTO = { text: "t", target: "t" };
+      const result: TranslateServiceResponseDTO | null = await cache.returnCachedDataIfExist(query);
       //then
-      expect(await cache.returnCachedDataIfExist(query)).toBe(null);
+      expect(result).toBe(null);
     });
   });
 
@@ -47,11 +82,10 @@ describe("CacheService class", () => {
     it("It should return given data", async () => {
       //given
       const response: TranslateServiceResponseDTO = { translatedText: "text", detectedSourceLanguage: "language" };
-      const readFileMockData = JSON.stringify([{ text: "text", target: "target", response: response }]);
       const query: CacheServiceQueryDTO = { text: "text", target: "target" };
+      const result: TranslateServiceResponseDTO | null = await cache.returnCachedDataIfExist(query);
       //when
-      jest.spyOn(fs, "readFile").mockResolvedValue(readFileMockData);
-      expect(await cache.returnCachedDataIfExist(query)).toMatchObject(response);
+      expect(result).toMatchObject([response]);
     });
   });
 });

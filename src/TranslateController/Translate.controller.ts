@@ -44,7 +44,7 @@ export class TranslateController {
           const { text, target }: TranslateServiceRequestDTO = req.body;
           if (text.length === 0 || target.length === 0) {
             const response: TranslateControllerResponseDTO = new TranslateControllerResponseDTO("Error", "Missing 'text' or 'target' parameter in body");
-            return res.status(404).send(response);
+            return res.status(400).send(response);
           }
 
           if (!this.availableLanguages.checkIfLanguageIsAvailable(target)) {
@@ -52,7 +52,7 @@ export class TranslateController {
               "Error",
               "Wrong language code. To see available languages add /languages to current URL"
             );
-            return res.status(404).send(response);
+            return res.status(400).send(response);
           }
 
           const translation: TranslateServiceResponseDTO = await this.translateService.translateText(text, target);

@@ -22,7 +22,7 @@ describe("TranslateService class", () => {
     });
   });
 
-  describe("When trying to translate text and string provided as API url was not valid", () => {
+  describe("When trying to translate text and string provided as API key was not valid", () => {
     it("It should throw TranslateException", async () => {
       //given
       process.env.API_KEY = "";
@@ -33,7 +33,7 @@ describe("TranslateService class", () => {
     });
   });
 
-  describe("When trying to translate text and string provided as API key was not valid", () => {
+  describe("When trying to translate text and string provided as API url was not valid", () => {
     it("It should throw TranslateException", async () => {
       //given
       process.env.API_URL = "";

@@ -18,7 +18,7 @@ describe("Translate controller class", () => {
       const getList = jest.spyOn(languages, "getListFromAPI");
       new TranslateController(translateService, languages, cache);
       //then
-      expect(getList).toBeCalled();
+      expect(getList).toHaveBeenCalledTimes(1);
     });
   });
 });

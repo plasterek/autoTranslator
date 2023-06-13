@@ -21,7 +21,8 @@ export class CacheService {
         res.status(200).send(cachedData);
       }
     } catch (err: any) {
-      throw new CacheServiceException(err);
+      console.log(err);
+      next();
     }
   }
 
@@ -42,7 +43,7 @@ export class CacheService {
     try {
       const currentData: CacheServiceResponseDTO[] = await this.readCachedData();
       currentData.push(data);
-      return fs.writeFile(this.databaseAdress, JSON.stringify(currentData));
+      return await fs.writeFile(this.databaseAdress, JSON.stringify(currentData));
     } catch (err: any) {
       throw new CacheServiceException(err);
     }
